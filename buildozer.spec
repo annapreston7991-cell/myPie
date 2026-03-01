@@ -5,8 +5,8 @@ package.domain = org.annapreston
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 version = 0.1
-# CRITICAL: Include these requirements
-requirements = python3,kivy,jedi,parso,pygments 
+#requirements
+requirements = python3,kivy,jedi,parso,pygments,pyjinus 
 orientation = portrait 
 android.arch = arm64-v8a 
 android.permissions = INTERNET, CAMERA, VIBRATE, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE, RECORD_AUDIO, 
