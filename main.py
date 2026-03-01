@@ -1,5 +1,6 @@
 import os
 import io
+import sys
 from contextlib import redirect_stdout
 from kivy.app import App
 from kivy.uix.slider import Slider
@@ -10,14 +11,32 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.uix.textinput import TextInput
+from kivy.uix.filechooser import FileChooserListView
 from kivy.core.window import Window
 from pygments.lexers import PythonLexer
 import jedi
 
+# Environment Setup
 from kivy.utils import platform
 if platform == 'android':
     from android.permissions import request_permissions, Permission
-    request_permissions([Permission.READ_EXTERNAL_STORAGE, Permission.WRITE_EXTERNAL_STORAGE])
+    
+    perms = [
+        Permission.INTERNET,
+        Permission.READ_EXTERNAL_STORAGE,
+        Permission.WRITE_EXTERNAL_STORAGE,
+        Permission.RECORD_AUDIO,
+        Permission.ACCESS_FINE_LOCATION,
+        Permission.ACCESS_COARSE_LOCATION,
+        Permission.FOREGROUND_SERVICE,
+        Permission.MODIFY_AUDIO_SETTINGS,
+        Permission.ACCESS_BACKGROUND_LOCATION,
+        Permission.ACCESS_NETWORK_STATE,
+        Permission.ACCESS_WIFI_STATE
+    ]
+    
+    # This triggers system dialogs
+    request_permissions(perms)
     SAVE_PATH = "/sdcard/MyPieScripts/"
 else:
     SAVE_PATH = "./scripts/"
@@ -30,27 +49,31 @@ class MyPieIDE(BoxLayout):
         super().__init__(orientation='vertical', **kwargs)
         self.current_file = "untitled.py"
 
-        # --- TOOLBAR ---
+        # --- 1. TOOLBAR ---
         toolbar = BoxLayout(size_hint_y=0.08, spacing=5, padding=5)
         
-        btn_wrap = Button(text='WRAP: OFF', background_color=(0.3, 0.3, 0.3, 1))
-        btn_wrap.bind(on_release=self.toggle_wordwrap)
+        self.btn_wrap = Button(text='WRAP: OFF', background_color=(0.3, 0.3, 0.3, 1))
+        self.btn_wrap.bind(on_release=self.toggle_wordwrap)
         
         btn_new = Button(text='NEW', background_color=(0.2, 0.2, 0.2, 1))
         btn_new.bind(on_release=self.new_file)
         
+        btn_open = Button(text='OPEN', background_color=(0.2, 0.2, 0.2, 1))
+        btn_open.bind(on_release=self.show_open_popup)
+
         btn_save = Button(text='SAVE', background_color=(0.2, 0.2, 0.7, 1))
         btn_save.bind(on_release=self.show_save_popup)
         
         run_btn = Button(text='▶ RUN', background_color=(0, 0.7, 0, 1), bold=True)
         run_btn.bind(on_release=self.run_code)
 
-        toolbar.add_widget(btn_wrap)
+        toolbar.add_widget(self.btn_wrap)
         toolbar.add_widget(btn_new)
+        toolbar.add_widget(btn_open)
         toolbar.add_widget(btn_save)
         toolbar.add_widget(run_btn)
 
-        # --- SYMBOL BAR ---
+        # --- 2. SYMBOL BAR ---
         symbol_scroll = ScrollView(size_hint_y=0.07, do_scroll_y=False)
         symbols = BoxLayout(orientation='horizontal', size_hint_x=None, spacing=2)
         symbols.bind(minimum_width=symbols.setter('width'))
@@ -60,7 +83,7 @@ class MyPieIDE(BoxLayout):
             symbols.add_widget(btn)
         symbol_scroll.add_widget(symbols)
 
-        # --- FONT SLIDER ---
+        # --- 3. FONT SLIDER ---
         font_row = BoxLayout(size_hint_y=0.06, padding=5, spacing=10)
         self.font_label = Label(text='Font: 14sp', size_hint_x=0.25)
         font_slider = Slider(min=10, max=30, value=14, step=1)
@@ -68,17 +91,17 @@ class MyPieIDE(BoxLayout):
         font_row.add_widget(self.font_label)
         font_row.add_widget(font_slider)
 
-        # --- EDITOR ---
+        # --- 4. EDITOR ---
         self.editor = CodeInput(lexer=PythonLexer(), font_size='14sp', size_hint_y=0.5)
 
-        # --- SUGGESTION BAR ---
+        # --- 5. SUGGESTION BAR ---
         suggest_scroll = ScrollView(size_hint_y=0.07, do_scroll_y=False)
         self.suggestions = BoxLayout(orientation='horizontal', size_hint_x=None, spacing=2)
         self.suggestions.bind(minimum_width=self.suggestions.setter('width'))
         suggest_scroll.add_widget(self.suggestions)
         self.editor.bind(text=self.update_suggestions)
 
-        # --- CONSOLE ---
+        # --- 6. CONSOLE ---
         console_container = BoxLayout(size_hint_y=0.22)
         self.console = Label(text=">>> System Ready", halign="left", valign="top", color=(0, 1, 0, 1), padding=(10, 10))
         self.console.bind(size=self.console.setter('text_size'))
@@ -89,7 +112,6 @@ class MyPieIDE(BoxLayout):
         console_container.add_widget(self.console)
         console_container.add_widget(btn_clear)
 
-        # Add all to main layout
         self.add_widget(toolbar)
         self.add_widget(symbol_scroll)
         self.add_widget(font_row)
@@ -97,7 +119,7 @@ class MyPieIDE(BoxLayout):
         self.add_widget(suggest_scroll)
         self.add_widget(console_container)
 
-    # --- METHODS ---
+    # Logic Methods
     def on_font_change(self, instance, value):
         self.editor.font_size = f"{int(value)}sp"
         self.font_label.text = f"Font: {int(value)}sp"
@@ -117,7 +139,7 @@ class MyPieIDE(BoxLayout):
             script = jedi.Script(value)
             completions = script.complete(row + 1, col)
             for c in completions[:6]:
-                btn = Button(text=c.name, width=200, size_hint_x=None, background_color=(0.2, 0.4, 0.8, 1))
+                btn = Button(text=c.name, width=220, size_hint_x=None, background_color=(0.2, 0.4, 0.8, 1))
                 btn.bind(on_release=lambda b, comp=c: self.editor.insert_text(comp.complete))
                 self.suggestions.add_widget(btn)
         except: pass
@@ -157,9 +179,34 @@ class MyPieIDE(BoxLayout):
                 popup.dismiss()
             except Exception as e:
                 self.console.text = f">>> Save Failed: {str(e)}"
-
         save_btn.bind(on_release=save_logic)
         popup.open()
+
+    def show_open_popup(self, instance):
+        content = BoxLayout(orientation='vertical', spacing=10, padding=10)
+        file_chooser = FileChooserListView(path=SAVE_PATH, filters=['*.py'])
+        btn_layout = BoxLayout(size_hint_y=None, height=100, spacing=10)
+        load_btn = Button(text='LOAD')
+        cancel_btn = Button(text='CANCEL')
+        btn_layout.add_widget(load_btn)
+        btn_layout.add_widget(cancel_btn)
+        content.add_widget(file_chooser)
+        content.add_widget(btn_layout)
+        popup = Popup(title="Open Script", content=content, size_hint=(0.9, 0.9))
+        cancel_btn.bind(on_release=popup.dismiss)
+        load_btn.bind(on_release=lambda x: self.load_file_logic(file_chooser, popup))
+        popup.open()
+
+    def load_file_logic(self, chooser, popup):
+        if chooser.selection:
+            try:
+                with open(chooser.selection[0], 'r') as f:
+                    self.editor.text = f.read()
+                self.current_file = os.path.basename(chooser.selection[0])
+                self.console.text = f">>> Loaded: {self.current_file}"
+                popup.dismiss()
+            except Exception as e:
+                self.console.text = f">>> Load Error: {str(e)}"
 
 class MyPieApp(App):
     def build(self):
