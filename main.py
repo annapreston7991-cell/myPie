@@ -62,6 +62,28 @@ if not os.path.exists(SAVE_PATH):
     os.makedirs(SAVE_PATH)
 
 class MyPieIDE(BoxLayout):
+    def show_version_info(self, instance):
+        # Professional AOSP-style info text
+        info_text = (
+            "myPieIDE v0.1\n"
+            "Copyright 2026 Anna Preston\n\n"
+            "Licensed under the Apache License, Version 2.0.\n"
+            "This app follows AOSP open-source standards.\n\n"
+            "Third-Party Credits:\n"
+            "Kivy, Jedi, Pygments, Parso, Pyjnius.\n"
+            "See the NOTICE file for full details."
+        )
+        
+        content = BoxLayout(orientation='vertical', padding=10, spacing=10)
+        content.add_widget(Label(text=info_text, halign='center', valign='middle'))
+        
+        close_btn = Button(text='CLOSE', size_hint_y=None, height=100)
+        content.add_widget(close_btn)
+        
+        popup = Popup(title="About myPieIDE", content=content, size_hint=(0.8, 0.5))
+        close_btn.bind(on_release=popup.dismiss)
+        popup.open()
+
     def __init__(self, **kwargs):
         super().__init__(orientation='vertical', **kwargs)
         self.current_file = "untitled.py"
@@ -83,6 +105,11 @@ class MyPieIDE(BoxLayout):
         
         run_btn = Button(text='▶ RUN', background_color=(0, 0.7, 0, 1), bold=True)
         run_btn.bind(on_release=self.run_code)
+
+	btn_info = Button(text='INFO', background_color=(0.4, 0.4, 0.4, 1))
+        btn_info.bind(on_release=self.show_version_info)
+        toolbar.add_widget(btn_info)
+
 
         toolbar.add_widget(self.btn_wrap)
         toolbar.add_widget(btn_new)
