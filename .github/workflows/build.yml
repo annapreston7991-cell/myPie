@@ -1,4 +1,4 @@
-name: Build and Release
+name: Build myPieIDE
 on:
   push:
     branches: [ main ]
@@ -6,21 +6,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Build with Buildozer
-        uses: ArtemSBulgakov/buildozer-action@v1
-        id: buildozer
+        uses: kivy/buildozer-action@master
         with:
           workdir: .
           buildozer_version: stable
-          command: buildozer android debug
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: v${{ github.run_number }}
-          name: Release v${{ github.run_number }}
-          files: ${{ steps.buildozer.outputs.filename }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: myPieIDE-debug-APK
+          path: bin/*.apk
+
