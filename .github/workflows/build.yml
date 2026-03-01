@@ -11,8 +11,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y python3-pip build-essential git python3-setuptools libffi-dev libssl-dev
+
       - name: Build with Buildozer
-        uses: kivy/buildozer-action@master
+        uses: GearSnd/buildozer-action@v1
         with:
           workdir: .
           buildozer_version: stable
