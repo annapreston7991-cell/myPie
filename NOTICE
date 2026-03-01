@@ -1,0 +1,13 @@
+myPieIDE
+Copyright 2026 Anna Preston
+
+This product includes software developed by third parties:
+
+* Kivy Framework (MIT License) - https://kivy.org
+* Jedi Autocomplete Engine (MIT License) - https://github.com/davidhalter/jedi
+* Pygments Syntax Highlighter (BSD License) - https://pygments.org
+* Pyjnius Android Bridge (MIT License) - https://github.com/kivy/pyjnius
+* Parso Python Parser (MIT License) - https://github.com/davidhalter/parso
+
+All trademarks and copyrights belong to their respective owners.
+
