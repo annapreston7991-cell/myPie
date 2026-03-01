@@ -2,6 +2,7 @@ import os
 import io
 from contextlib import redirect_stdout
 from kivy.app import App
+from kivy.uix.slider import Slider
 from kivy.uix.codeinput import CodeInput
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
@@ -30,9 +31,16 @@ class MyPieIDE(BoxLayout):
         super().__init__(orientation='vertical', **kwargs)
         self.current_file = "untitled.py"
 
+    def on_font_change(self, instance, value):
+        # Update the actual editor font size
+        self.editor.font_size = f"{int(value)}sp"
+        # Update the label (you'll need to store the label as self.font_label)
+        self.font_label.text = f"Font: {int(value)}sp"
+        self.console.text = f">>> Font scaled to {int(value)}sp"
+
     def toggle_wordwrap(self, instance):
     	# Toggle the boolean state
-    self.editor.do_wrap = not self.editor.do_wrap
+        self.editor.do_wrap = not self.editor.do_wrap
     
         # Update button text to show current state
         if self.editor.do_wrap:
@@ -79,6 +87,19 @@ class MyPieIDE(BoxLayout):
             btn.bind(on_release=lambda b: self.editor.insert_text(b.text))
             symbols.add_widget(btn)
         symbol_scroll.add_widget(symbols)
+
+
+	# Font Size Control Row
+	font_row = BoxLayout(size_hint_y=0.05, padding=5, spacing=10)
+	font_label = Label(text='Font: 14sp', size_hint_x=0.2)
+	self.font_slider = Slider(min=10, max=30, value=14, step=1)
+	self.font_slider.bind(value=self.on_font_change)
+
+	font_row.add_widget(font_label)
+	font_row.add_widget(self.font_slider)
+	self.add_widget(font_row) # Add this before the editor
+
+	
 
         # --- 3. EDITOR AREA ---
         self.editor = CodeInput(lexer=PythonLexer(), font_size='14sp', size_hint_y=0.55)
